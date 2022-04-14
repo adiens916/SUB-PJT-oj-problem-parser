@@ -18,19 +18,27 @@ from datetime import date
 
 # input.txt를 읽어오기 위해 소스 첫 부분에 써주는 코드
 input_snippet = '''\
-from pathlib import Path
 import sys
-
+from pathlib import Path
 
 parent_dir = Path(__file__).parent
 file_name = Path(__file__).stem
 
-sys.stdin = open(f"{parent_dir}\{file_name} input.txt")
+sys.stdin = open(f"{parent_dir}\{file_name}_input.txt")
 input = sys.stdin.readline'''
 
 
 # 문제 제목에서 괄호 이후만 가져오는 함수
-def extract_problem_name(line):
+def extract_problem_name(line: str, with_underscore=False):
+    # 공백을 밑줄로 바꾸기
+    if with_underscore:
+        line = line.replace(' ', '_')
+
+    # 특수문자를 바꾸기
+    for sp, no_sp in (('?', '？'), ('!', '！')):
+        if sp in line:
+            line = line.replace(sp, no_sp)
+
     if ']' in line:
         # 괄호를 기준으로 나누고, 뒤에 있는 걸 가져옴
         name = line.split(']')[1]
@@ -65,17 +73,17 @@ def createProblemSet(problem_file):
     target_dir = makeDirectoryForToday()
 
     text = open(f"{text_dir}\{problem_file}", "rt", encoding='UTF8')
+    is_num_before = False
     for line in text:
         # 문제 번호 확인
-        if "0" <= line[0] <= "9":
+        if "0" <= line[0] <= "9" and not is_num_before:
             problem_num = line.split()[0]
-            printNext = True
-            continue
-
+            is_num_before = True
+        
         # 문제 번호 다음에 문제 이름이 오는데, 그 이름을 바탕으로 파일 생성
-        elif printNext:
+        elif is_num_before:
             # python 파일 생성
-            file_name = problem_num + '. ' + extract_problem_name(line)
+            file_name = problem_num + '_' + extract_problem_name(line, True)
             f = open(f"{target_dir}\{file_name}.py", "w", encoding="UTF8")
             
             # 파일 처음에 input 읽어오는 문구 작성
@@ -83,18 +91,16 @@ def createProblemSet(problem_file):
             f.close()
 
             # input txt 생성
-            f = open(f"{target_dir}\{file_name} input.txt", "w", encoding="UTF8")
+            f = open(f"{target_dir}\{file_name}_input.txt", "w", encoding="UTF8")
             f.close()
 
             # output txt 생성
-            f = open(f"{target_dir}\{file_name} output.txt", "w", encoding="UTF8")
+            f = open(f"{target_dir}\{file_name}_output.txt", "w", encoding="UTF8")
             f.close()
 
 
-            printNext = False
+            is_num_before = False
         
-        else:
-            pass
     text.close()
 
 
